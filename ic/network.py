@@ -1,13 +1,10 @@
 import deepxde as dde
 import numpy as np
-from deepxde.backend import tf
 import matplotlib.pyplot as plt
 
 class PINN:
 
-    def __init__(self, ARCHITECTURE, ACTIVATION, INITIALIZER, OPTIMIZER):
-        self.ARCHITECTURE = ARCHITECTURE
-        self.ACTIVATION = ACTIVATION
+    def __init__(self, INITIALIZER, OPTIMIZER):
         self.INITIALIZER = INITIALIZER
         self.OPTIMIZER = OPTIMIZER
 
@@ -95,20 +92,43 @@ class PINN:
                 num_initial=int(SAMPLE_POINTS / 2),
             )
 
-    def train(self, LEARNING_RATE,  LOSS_WEIGHTS, ITERATIONS, BATCH_SIZE, title="loss"):
-        self.net = dde.maps.FNN(self.ARCHITECTURE, self.ACTIVATION, self.INITIALIZER)
+    def create_model(self, config, LOSS_WEIGHTS):
 
-        self.model = dde.Model(self.data, self.net)
-        self.model.compile(self.OPTIMIZER, lr=LEARNING_RATE, loss_weights=LOSS_WEIGHTS)
+        learning_rate, num_dense_layers, num_dense_nodes, activation = config
 
-        losshistory, trainstate = self.model.train(
-            iterations=ITERATIONS,
-            batch_size=BATCH_SIZE,
+        self.net = dde.maps.FNN(
+            [3] + [num_dense_nodes] * num_dense_layers + [1],
+            activation,
+            self.INITIALIZER
         )
 
-        dde.saveplot(losshistory, trainstate, issave=True, isplot=True)
-        plt.show()
-        plt.savefig(title)
-        plt.close()
+        model = dde.Model(self.data, self.net)
+        model.compile(self.OPTIMIZER, lr=learning_rate, loss_weights=LOSS_WEIGHTS)
+        
+        return model
+        # losshistory, trainstate = self.model.train(
+        #     iterations=ITERATIONS,
+        #     batch_size=BATCH_SIZE,
+        # )
+
+        # dde.saveplot(losshistory, trainstate, issave=True, isplot=True)
+        # plt.show()
+        # plt.savefig(title)
+        # plt.close()
+
+    def train_model(self, model, ITERATIONS, BATCH_SIZE, iteration_step):
+        
+        losshistory, train_state = model.train(iterations=ITERATIONS, batch_size=BATCH_SIZE)
+        dde.saveplot(
+            losshistory, train_state, issave=True, isplot=False,
+            loss_fname= f"loss_{iteration_step}.dat",
+            train_fname = f"train{iteration_step}.dat",
+            test_fname= f"test{iteration_step}.dat"
+        )
+        train = np.array(losshistory.loss_train).sum(axis=1).ravel()
+        test = np.array(losshistory.loss_test).sum(axis=1).ravel()
+
+        error = test.min()
+        return error
 
 
