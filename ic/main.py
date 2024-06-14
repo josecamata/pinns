@@ -32,33 +32,39 @@ LOSS_WEIGHTS = [
     5, 
 ]
 
-def pde(X, U):
-    dU_x = dde.grad.jacobian(U, X, j=0)
-    dU_y = dde.grad.jacobian(U, X, j=1)
-    dU_t = dde.grad.jacobian(U, X, j=2)
+def neural_network():
 
-    dU_xx = dde.grad.hessian(U, X, i=0, j=0)
-    dU_yy = dde.grad.hessian(U, X, i=1, j=1)
+    def pde(X, U):
+        dU_x = dde.grad.jacobian(U, X, j=0)
+        dU_y = dde.grad.jacobian(U, X, j=1)
+        dU_t = dde.grad.jacobian(U, X, j=2)
 
-    return dU_t + (5 - X[:, 1:2]) * dU_x + (X[:, 0:1] - 5) * dU_y - k * (dU_xx + dU_yy)
+        dU_xx = dde.grad.hessian(U, X, i=0, j=0)
+        dU_yy = dde.grad.hessian(U, X, i=1, j=1)
 
-def func_initial_condition(x):
-    r = np.power(x[:, 0:1] - 5, 2) + np.power(x[:, 1:2] - 7.5, 2)
-    return np.exp(-0.5 * r)
+        return dU_t + (5 - X[:, 1:2]) * dU_x + (X[:, 0:1] - 5) * dU_y - k * (dU_xx + dU_yy)
 
-pinn = PINN('Glorot uniform', 'adam')
-pinn.define_geometry(10, 10, 0, 2 * np.pi)
-pinn.define_pde(pde)
-pinn.define_boundaries(0, 0, 0, 0)
-pinn.define_initial_condition(func_initial_condition)
-pinn.training_data(3000)
+    def func_initial_condition(x):
+        r = np.power(x[:, 0:1] - 5, 2) + np.power(x[:, 1:2] - 7.5, 2)
+        return np.exp(-0.5 * r)
 
-# HPO setting
-n_calls = 11
+    pinn = PINN('Glorot uniform', 'adam')
+    pinn.define_geometry(10, 10, 0, 2 * np.pi)
+    pinn.define_pde(pde)
+    pinn.define_boundaries(0, 0, 0, 0)
+    pinn.define_initial_condition(func_initial_condition)
+    pinn.training_data(3000)
+
+    return pinn
+
+pinn = neural_network()
+
+# HPO configurações
+n_calls = 11 #numero de chamadas
 dim_learning_rate = Real(low=1e-4, high=5e-2, name="learning_rate", prior="log-uniform")
-dim_num_dense_layers = Integer(low=1, high=10, name="num_dense_layers")
+dim_num_dense_layers = Integer(low=2, high=10, name="num_dense_layers")
 dim_num_dense_nodes = Integer(low=20, high=80, name="num_dense_nodes")
-dim_activation = Categorical(categories=["sin", "sigmoid", "tanh"], name="activation")
+dim_activation = Categorical(categories=["ReLU", "sigmoid", "tanh", "Swish", "sin"], name="activation")
 
 dimensions = [
     dim_learning_rate,
@@ -67,7 +73,21 @@ dimensions = [
     dim_activation,
 ]
 
+#Parametros padrão
 default_parameters = [1e-3, 5, 60, "tanh"]
+
+#dados de predição
+num_values = 100
+    
+x = np.ones((num_values, 1)) * 5
+y = np.linspace(0, 10, num_values).reshape(-1, 1)
+t = np.ones((num_values, 1)) * (2 * np.pi)
+
+input_data = np.hstack((x, y, t))
+
+fig, ax1 = plt.subplots()
+ax1.set_xlabel('y')
+ax1.set_ylabel('u(x = 5, y, t = 2π)')
 
 @use_named_args(dimensions=dimensions)
 def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
@@ -88,7 +108,7 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     error = pinn.train_model(model, 2000, 32, iteration_step = ITERATION)
     # print(accuracy, 'accuracy is')
 
-    file_name = f'loss_{ITERATION}.dat'
+    file_name = f'/content/outputs/loss/loss_{ITERATION}.dat'
 
     with open(file_name, 'r') as file:
         original_content = file.read()
@@ -101,6 +121,11 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     with open(file_name, 'w') as file:
         file.write(new_content)
 
+    predicted_solution = np.empty((num_values, 1))
+    for i in range(num_values):
+        predicted_solution[i] = model.predict(input_data[i].reshape(1, -1))
+
+    ax1.plot(y, predicted_solution, linewidth=2, label=f'Curva {ITERATION+1}')
 
     if np.isnan(error):
         error = 10**5
@@ -118,6 +143,10 @@ search_result = gp_minimize(
     x0=default_parameters,
     random_state=1234,
 )
+
+ax1.legend()
+fig.savefig('grafico_comparacao_test.png')
+plt.close(fig)
 
 print(search_result.x)
 

@@ -121,9 +121,9 @@ class PINN:
         losshistory, train_state = model.train(iterations=ITERATIONS, batch_size=BATCH_SIZE)
         dde.saveplot(
             losshistory, train_state, issave=True, isplot=False,
-            loss_fname= f"loss_{iteration_step}.dat",
-            train_fname = f"train{iteration_step}.dat",
-            test_fname= f"test{iteration_step}.dat"
+            loss_fname= f"/content/outputs/loss/loss_{iteration_step}.dat",
+            train_fname = f"/content/outputs/train/train{iteration_step}.dat",
+            test_fname= f"/content/outputs/test/test{iteration_step}.dat",
         )
         train = np.array(losshistory.loss_train).sum(axis=1).ravel()
         test = np.array(losshistory.loss_test).sum(axis=1).ravel()
