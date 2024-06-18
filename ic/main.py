@@ -89,12 +89,15 @@ fig, ax1 = plt.subplots()
 ax1.set_xlabel('y')
 ax1.set_ylabel('u(x = 5, y, t = 2π)')
 
+results = np.zeros((n_calls, 5), dtype=object)
+
 @use_named_args(dimensions=dimensions)
 def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     config = [learning_rate, num_dense_layers, num_dense_nodes, activation]
     global ITERATION
 
-    print(ITERATION, "it number")
+    print("\n " + str(ITERATION) + " it number")
+    
     # Print the hyper-parameters.
     print("learning rate: {0:.1e}".format(learning_rate))
     print("num_dense_layers:", num_dense_layers)
@@ -105,27 +108,32 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     # Create the neural network with these hyper-parameters.
     model = pinn.create_model(config, LOSS_WEIGHTS)
     # possibility to change where we save
-    error = pinn.train_model(model, 2000, 32, iteration_step = ITERATION)
+    error, training_time = pinn.train_model(model, 2000, 32, iteration_step = ITERATION)
     # print(accuracy, 'accuracy is')
 
-    file_name = f'/content/outputs/loss/loss_{ITERATION}.dat'
+    file_name = f'outputs/loss/loss_{ITERATION}.dat'
 
     with open(file_name, 'r') as file:
         original_content = file.read()
 
     # Salva os dados usados de hiper parametros
-    new_header = f"# learning_rate: {learning_rate}\n# num_dense_layers: {num_dense_layers}\n# num_dense_nodes: {num_dense_nodes}\n# activation: {activation} \n# batch_size: 32\n\n"
+    new_header = f"""# learning_rate: {learning_rate}\n# num_dense_layers:
+    {num_dense_layers}\n# num_dense_nodes: {num_dense_nodes}\n# activation:
+    {activation} \n# batch_size: 32\n# Final loss: {error}\n# Training Time: {training_time}\n\n"""
 
     new_content = new_header + original_content
 
     with open(file_name, 'w') as file:
         file.write(new_content)
 
-    predicted_solution = np.empty((num_values, 1))
-    for i in range(num_values):
-        predicted_solution[i] = model.predict(input_data[i].reshape(1, -1))
+    results[ITERATION, :-1] = config
+    results[ITERATION, -1] = error
 
-    ax1.plot(y, predicted_solution, linewidth=2, label=f'Curva {ITERATION+1}')
+    # predicted_solution = np.empty((num_values, 1))
+    # for i in range(num_values):
+    #     predicted_solution[i] = model.predict(input_data[i].reshape(1, -1))
+
+    # ax1.plot(y, predicted_solution, linewidth=2, label=f'Curva {ITERATION+1}')
 
     if np.isnan(error):
         error = 10**5
@@ -144,9 +152,11 @@ search_result = gp_minimize(
     random_state=1234,
 )
 
-ax1.legend()
-fig.savefig('grafico_comparacao_test.png')
-plt.close(fig)
+print("\nResultados")
+print(results)
+# ax1.legend()
+# fig.savefig('grafico_comparacao_test.png')
+# plt.close(fig)
 
 print(search_result.x)
 

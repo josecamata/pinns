@@ -1,6 +1,7 @@
 import deepxde as dde
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 class PINN:
 
@@ -117,18 +118,21 @@ class PINN:
         # plt.close()
 
     def train_model(self, model, ITERATIONS, BATCH_SIZE, iteration_step):
-        
+        start_time = time.time()
         losshistory, train_state = model.train(iterations=ITERATIONS, batch_size=BATCH_SIZE)
+        end_time = time.time()
+        training_time = end_time - start_time
+
         dde.saveplot(
             losshistory, train_state, issave=True, isplot=False,
-            loss_fname= f"/content/outputs/loss/loss_{iteration_step}.dat",
-            train_fname = f"/content/outputs/train/train{iteration_step}.dat",
-            test_fname= f"/content/outputs/test/test{iteration_step}.dat",
+            loss_fname= f"outputs/loss/loss_{iteration_step}.dat",
+            train_fname = f"outputs/train/train{iteration_step}.dat",
+            test_fname= f"outputs/test/test{iteration_step}.dat",
         )
         train = np.array(losshistory.loss_train).sum(axis=1).ravel()
         test = np.array(losshistory.loss_test).sum(axis=1).ravel()
 
         error = test.min()
-        return error
+        return error, training_time
 
 
