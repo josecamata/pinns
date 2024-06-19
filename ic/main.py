@@ -61,9 +61,9 @@ pinn = neural_network()
 
 # HPO configurações
 n_calls = 11 #numero de chamadas
-dim_learning_rate = Real(low=1e-4, high=5e-2, name="learning_rate", prior="log-uniform")
-dim_num_dense_layers = Integer(low=2, high=10, name="num_dense_layers")
-dim_num_dense_nodes = Integer(low=20, high=80, name="num_dense_nodes")
+dim_learning_rate = Categorical(categories=[1e-4, 1.68e-4, 2.83e-4, 4.78e-4, 8.06e-4, 1e-3, 2.3e-3, 3.89e-3, 6.58e-3, 8.4e-3, 1e-2, 1.87e-2, 3.16e-2, 5e-2], name="learning_rate")
+dim_num_dense_layers = Integer(low=3, high=10, name="num_dense_layers")
+dim_num_dense_nodes = Categorical(categories=[20, 30, 40, 50, 60, 70, 80], name="num_dense_nodes")
 dim_activation = Categorical(categories=["ReLU", "sigmoid", "tanh", "Swish", "sin"], name="activation")
 
 dimensions = [
@@ -85,11 +85,11 @@ t = np.ones((num_values, 1)) * (2 * np.pi)
 
 input_data = np.hstack((x, y, t))
 
-fig, ax1 = plt.subplots()
+fig, ax1 = plt.subplots(figsize=(16, 8))
 ax1.set_xlabel('y')
 ax1.set_ylabel('u(x = 5, y, t = 2π)')
 
-results = np.zeros((n_calls, 5), dtype=object)
+results = np.zeros((n_calls, 6), dtype=object)
 
 @use_named_args(dimensions=dimensions)
 def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
@@ -108,7 +108,7 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     # Create the neural network with these hyper-parameters.
     model = pinn.create_model(config, LOSS_WEIGHTS)
     # possibility to change where we save
-    error, training_time = pinn.train_model(model, 2000, 32, iteration_step = ITERATION)
+    error, training_time = pinn.train_model(model, 100, 32, iteration_step = ITERATION)
     # print(accuracy, 'accuracy is')
 
     file_name = f'outputs/loss/loss_{ITERATION}.dat'
@@ -117,23 +117,21 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
         original_content = file.read()
 
     # Salva os dados usados de hiper parametros
-    new_header = f"""# learning_rate: {learning_rate}\n# num_dense_layers:
-    {num_dense_layers}\n# num_dense_nodes: {num_dense_nodes}\n# activation:
-    {activation} \n# batch_size: 32\n# Final loss: {error}\n# Training Time: {training_time}\n\n"""
+    new_header = f"""# learning_rate: {learning_rate}\n# num_dense_layers: {num_dense_layers}\n# num_dense_nodes: {num_dense_nodes}\n# activation:{activation} \n# batch_size: 32\n# final loss: {error}\n# Training Time: {training_time}\n\n"""
 
     new_content = new_header + original_content
 
     with open(file_name, 'w') as file:
         file.write(new_content)
 
-    results[ITERATION, :-1] = config
-    results[ITERATION, -1] = error
+    results[ITERATION, :-2] = config #salva os parametros
 
-    # predicted_solution = np.empty((num_values, 1))
-    # for i in range(num_values):
-    #     predicted_solution[i] = model.predict(input_data[i].reshape(1, -1))
+    predicted_solution = np.empty((num_values, 1))
+    for i in range(num_values):
+        predicted_solution[i] = model.predict(input_data[i].reshape(1, -1))
 
-    # ax1.plot(y, predicted_solution, linewidth=2, label=f'Curva {ITERATION+1}')
+    results[ITERATION, -2] = predicted_solution #salva as predicoes
+    results[ITERATION, -1] = error #salva o erro
 
     if np.isnan(error):
         error = 10**5
@@ -152,11 +150,19 @@ search_result = gp_minimize(
     random_state=1234,
 )
 
-print("\nResultados")
-print(results)
-# ax1.legend()
-# fig.savefig('grafico_comparacao_test.png')
-# plt.close(fig)
+sorted_results = results[results[:, -1].argsort()]
+
+# Selecionar as 10 primeiras linhas após a ordenação.
+top_10_results = sorted_results[:10]
+
+for i, result in enumerate(top_10_results):
+    label = f"LR: {result[0]}, Layers: {result[1]}, Nodes: {result[2]}, Activ.: {result[3]}"
+    ax1.plot(y, result[-2].reshape(y.shape), linewidth=2, label=label)
+
+ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+ax1.set_title('10 Melhores Configurações')
+fig.savefig('grafico_comparacao.png', bbox_inches='tight')
+plt.close(fig)
 
 print(search_result.x)
 
