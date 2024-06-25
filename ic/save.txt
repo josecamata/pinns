@@ -1,1 +1,28 @@
 Treino com batch_size de 32 e 10000 épocas, além da seed ser 477856.
+
+=> Menor loss: 20.dat
+# learning_rate: 0.00389
+# num_dense_layers: 10
+# num_dense_nodes: 40
+# activation:sin 
+# batch_size: 32
+# final loss: 3.403716254979372e-05
+# Training Time: 194.18208599090576
+
+=> Melhor resultado no gráfico: 11.dat
+# learning_rate: 0.000806
+# num_dense_layers: 10
+# num_dense_nodes: 30
+# activation:Swish 
+# batch_size: 32
+# final loss: 0.00012545172648970038
+# Training Time: 277.70015001296997
+
+=> Resultado Estranho: 5.dat
+# learning_rate: 0.0187
+# num_dense_layers: 4
+# num_dense_nodes: 50
+# activation:Swish 
+# batch_size: 32
+# final loss: 0.00023714013514108956
+# Training Time: 134.48216724395752
