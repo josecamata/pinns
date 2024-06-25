@@ -1,1 +1,1 @@
-treinei com batch_size de 32 e 5000 épocas e seed de 856477.
+Treino com batch_size de 32 e 10000 épocas, além da seed ser 477856.
