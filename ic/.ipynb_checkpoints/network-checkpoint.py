@@ -2,6 +2,7 @@ import deepxde as dde
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+from deepxde.callbacks import ModelCheckpoint
 
 class PINN:
 
@@ -210,15 +211,21 @@ class PINN:
         Inteiro representando qual a iteração no treinamento dos hiperparâmetros para salvar corretamente os arquivos .dat
         
     Retorno:
-        Retorna o erro e o tempo de treinamento.
+        Retorna o erro e o tempo de treinamento. 
+        Além disso, restaura o modelo que obteve melhor loss.
     ----------
     """
     def train_model(self, model, ITERATIONS, BATCH_SIZE, iteration_step):
+        # CallBack para restaurar o Melhor Modelo
+        checker = dde.callbacks.ModelCheckpoint(
+            "outputs/model/model.ckpt", save_better_only=True, period=1000, verbose=1
+        )
+        
         # Dispara um contador
         start_time = time.time()
         
         # Treina o modelo, obtendo um histórico das perdas 
-        losshistory, train_state = model.train(iterations=ITERATIONS, batch_size=BATCH_SIZE)
+        losshistory, train_state = model.train(iterations=ITERATIONS, batch_size=BATCH_SIZE, callbacks=[checker])
         
         # Encerra o contador
         end_time = time.time()
@@ -236,4 +243,8 @@ class PINN:
         test = np.array(losshistory.loss_test).sum(axis=1).ravel()
 
         error = test.min()
+        
+        # Restaura o melhor modelo
+        model.restore("outputs/model/model.ckpt-" + str(train_state.best_step) + ".ckpt", verbose=1)
+        
         return error, training_time

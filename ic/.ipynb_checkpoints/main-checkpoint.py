@@ -24,7 +24,7 @@ else:
 k = 10 ** -8
 
 # Número de épocas
-epochs = 10000
+epochs = 1000
 
 # Semente para usar na busca dos parâmetros
 seed = 477856
@@ -86,7 +86,7 @@ pinn = neural_network()
 """ Otimização dos Hiperparâmetros (HPO) """
 
 # Número de chamadas para o HPO
-n_calls = 30 
+n_calls = 11 
 
 # Taxas de Aprendizado usadas
 dim_learning_rate = Categorical(categories=[1e-4, 1.68e-4, 2.83e-4, 4.78e-4, 8.06e-4, 1e-3, 2.3e-3, 3.89e-3, 6.58e-3, 8.4e-3, 1e-2, 1.87e-2, 3.16e-2, 5e-2], name="learning_rate")
@@ -125,7 +125,7 @@ ax1.set_xlabel('y')
 ax1.set_ylabel('u(x = 5, y, t = 2π)')
 
 # Array para armazenar os hpos usados, predição obtida e o erro.
-results = np.zeros((n_calls, 6), dtype=object)
+results = np.zeros((n_calls, 7), dtype=object)
 
 # Função para buscar os hiperparâmetros
 @use_named_args(dimensions=dimensions)
@@ -146,7 +146,7 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     model = pinn.create_model(config, LOSS_WEIGHTS)
     
     # Treino do Modelo
-    error, training_time = pinn.train_model(model, epochs, batch_size, iteration_step = ITERATION)
+    error, training_time, best_step = pinn.train_model(model, epochs, batch_size, iteration_step = ITERATION)
 
     """ Parte para salvar no .dat os dados de hiperparâmetros usados naquele treinamento """
     
@@ -155,8 +155,8 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     with open(file_name, 'r') as file:
         original_content = file.read()
 
-    # Salva os dados usados de hiper parametros
-    new_header = f"""# learning_rate: {learning_rate}\n# num_dense_layers: {num_dense_layers}\n# num_dense_nodes: {num_dense_nodes}\n# activation:{activation} \n# batch_size: 32\n# final loss: {error}\n# Training Time: {training_time}\n\n"""
+    # Salva os dados usados de hiper parametros e outros dados, como loss final, tempo de treinamento e qual época foi obtido melhor modelo
+    new_header = f"""# learning_rate: {learning_rate}\n# num_dense_layers: {num_dense_layers}\n# num_dense_nodes: {num_dense_nodes}\n# activation:{activation} \n# batch_size: 32\n# final loss: {error}\n# Training Time: {training_time}\n# Best Step: {best_step}\n\n"""
 
     new_content = new_header + original_content
 
@@ -164,12 +164,13 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
         file.write(new_content)
     
     """ Parte do Gráfico Comparativo """
-    results[ITERATION, :-2] = config # Salva os parâmetros
+    results[ITERATION, :-3] = config # Salva os parâmetros
 
     predicted_solution = np.empty((num_values, 1))
     for i in range(num_values):
         predicted_solution[i] = model.predict(input_data[i].reshape(1, -1))
-
+    
+    results[ITERATION, -3] = ITERATION #salva o ID para facilitar depois buscar a loss
     results[ITERATION, -2] = predicted_solution # Salva as predições
     results[ITERATION, -1] = error # Salva o erro obtido
 
@@ -199,7 +200,7 @@ top_10_results = sorted_results[:10]
 
 #Construção do gráfico
 for i, result in enumerate(top_10_results):
-    label = f"LR: {result[0]}, Layers: {result[1]}, Nodes: {result[2]}, Activ.: {result[3]}"
+    label = f"{result[-3]} - LR: {result[0]}, Layers: {result[1]}, Nodes: {result[2]}, Activ.: {result[3]}"
     ax1.plot(y, result[-2].reshape(y.shape), linewidth=2, label=label)
 
 ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -219,3 +220,11 @@ plt.close(fig_convergence.figure)
 fig_objective = plot_objective(search_result, show_points=True, size=3.8)
 plt.savefig('objective_plot.png')
 plt.close(fig_objective.figure)
+
+# Arquivo final contendo informações mais gerais.
+conteudo = f"""Treino com batch_size de {batch_size} e {epochs} épocas, além da seed ser {seed}.
+Melhor configuração de parâmetros obtida: {search_result.x}
+"""
+
+with open('info.txt', 'w') as arquivo:
+    arquivo.write(conteudo)
