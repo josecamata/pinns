@@ -1,4 +1,5 @@
 import deepxde as dde
+import random
 import numpy as np
 from network import PINN
 import matplotlib.pyplot as plt
@@ -24,10 +25,12 @@ else:
 k = 10 ** -8
 
 # Número de épocas
-epochs = 1000
+epochs = 10000
 
 # Semente para usar na busca dos parâmetros
-seed = 477856
+seed = random.randint(1e6, 1e7)
+print('Seed: ', seed)
+print()
 
 # Tamanho dos lotes
 batch_size = 32
@@ -86,7 +89,7 @@ pinn = neural_network()
 """ Otimização dos Hiperparâmetros (HPO) """
 
 # Número de chamadas para o HPO
-n_calls = 11 
+n_calls = 40 
 
 # Taxas de Aprendizado usadas
 dim_learning_rate = Categorical(categories=[1e-4, 1.68e-4, 2.83e-4, 4.78e-4, 8.06e-4, 1e-3, 2.3e-3, 3.89e-3, 6.58e-3, 8.4e-3, 1e-2, 1.87e-2, 3.16e-2, 5e-2], name="learning_rate")
