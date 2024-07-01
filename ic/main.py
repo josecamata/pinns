@@ -89,7 +89,7 @@ pinn = neural_network()
 """ Otimização dos Hiperparâmetros (HPO) """
 
 # Número de chamadas para o HPO
-n_calls = 40 
+n_calls = 40
 
 # Taxas de Aprendizado usadas
 dim_learning_rate = Categorical(categories=[1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2], name="learning_rate")
@@ -98,7 +98,7 @@ dim_learning_rate = Categorical(categories=[1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2],
 dim_num_dense_layers = Integer(low=3, high=8, name="num_dense_layers")
 
 # Número de Neurônios em cada Camada Oculta
-dim_num_dense_nodes = Categorical(categories=[20, 30, 40, 50, 60], name="num_dense_nodes")
+dim_num_dense_nodes = Categorical(categories=[20, 30, 40, 50, 60, 70, 80], name="num_dense_nodes")
 
 # Funções de Ativação
 dim_activation = Categorical(categories=["ReLU", "sigmoid", "tanh", "Swish", "sin"], name="activation")
