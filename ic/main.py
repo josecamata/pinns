@@ -37,12 +37,12 @@ batch_size = 32
 
 # pde, top, right, down, left, ic
 LOSS_WEIGHTS = [
+    100, 
+    0.1,
+    0.1,
+    0.1,
+    0.1,
     10, 
-    0.1,
-    0.1,
-    0.1,
-    0.1,
-    5, 
 ]
 
 # Definição da Rede Neural
@@ -92,13 +92,13 @@ pinn = neural_network()
 n_calls = 40 
 
 # Taxas de Aprendizado usadas
-dim_learning_rate = Categorical(categories=[1e-4, 1.68e-4, 2.83e-4, 4.78e-4, 8.06e-4, 1e-3, 2.3e-3, 3.89e-3, 6.58e-3, 8.4e-3, 1e-2, 1.87e-2, 3.16e-2, 5e-2], name="learning_rate")
+dim_learning_rate = Categorical(categories=[1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2], name="learning_rate")
 
 # Número de Camadas Ocultas
-dim_num_dense_layers = Integer(low=3, high=10, name="num_dense_layers")
+dim_num_dense_layers = Integer(low=3, high=8, name="num_dense_layers")
 
 # Número de Neurônios em cada Camada Oculta
-dim_num_dense_nodes = Categorical(categories=[20, 30, 40, 50, 60, 70, 80], name="num_dense_nodes")
+dim_num_dense_nodes = Categorical(categories=[20, 30, 40, 50, 60], name="num_dense_nodes")
 
 # Funções de Ativação
 dim_activation = Categorical(categories=["ReLU", "sigmoid", "tanh", "Swish", "sin"], name="activation")
