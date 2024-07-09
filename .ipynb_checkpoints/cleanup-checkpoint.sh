@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Imagens para serem removidas
+# Imagens para serem removidas (arquivo txt tbm)
 files_to_remove=(
   "objective_plot.png"
   "convergence_plot.png"
