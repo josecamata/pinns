@@ -10,6 +10,7 @@ import skopt
 from skopt import gp_minimize
 from skopt.plots import plot_convergence, plot_objective
 import os
+import csv
 
 np.int = int
 
@@ -25,24 +26,23 @@ else:
 k = 10 ** -8
 
 # Número de épocas
-epochs = 10000
+epochs = 10000 
 
 # Semente para usar na busca dos parâmetros
-seed = random.randint(1e6, 1e7)
-print('Seed: ', seed)
-print()
+seed = 9298745
+dde.config.set_random_seed(seed)
 
 # Tamanho dos lotes
 batch_size = 32
 
 # pde, top, right, down, left, ic
 LOSS_WEIGHTS = [
+    100, 
+    0.1,
+    0.1,
+    0.1,
+    0.1,
     10, 
-    0.1,
-    0.1,
-    0.1,
-    0.1,
-    5, 
 ]
 
 # Definição da Rede Neural
@@ -89,13 +89,13 @@ pinn = neural_network()
 """ Otimização dos Hiperparâmetros (HPO) """
 
 # Número de chamadas para o HPO
-n_calls = 40 
+n_calls = 40
 
 # Taxas de Aprendizado usadas
-dim_learning_rate = Categorical(categories=[1e-4, 1.68e-4, 2.83e-4, 4.78e-4, 8.06e-4, 1e-3, 2.3e-3, 3.89e-3, 6.58e-3, 8.4e-3, 1e-2, 1.87e-2, 3.16e-2, 5e-2], name="learning_rate")
+dim_learning_rate = Categorical(categories=[1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2], name="learning_rate")
 
 # Número de Camadas Ocultas
-dim_num_dense_layers = Integer(low=3, high=10, name="num_dense_layers")
+dim_num_dense_layers = Integer(low=3, high=8, name="num_dense_layers")
 
 # Número de Neurônios em cada Camada Oculta
 dim_num_dense_nodes = Categorical(categories=[20, 30, 40, 50, 60, 70, 80], name="num_dense_nodes")
@@ -110,29 +110,25 @@ dimensions = [
     dim_activation,
 ]
 
-#Parametros padrão/inicial para começar a busca
+# Parametros padrão/inicial para começar a busca
 default_parameters = [1e-3, 5, 60, "tanh"]
 
-""" Parte para montar um gráfico comparativo posteriormente """
-num_values = 100
+""" Parte para salvar a predição que será usada em um gráfico de recorte comparativo """
+num_values = 128 # Malha idêntica ao do solver de elementos finitos
     
-x = np.ones((num_values, 1)) * 5
-y = np.linspace(0, 10, num_values).reshape(-1, 1)
-t = np.ones((num_values, 1)) * (2 * np.pi)
+x = np.ones((num_values, 1)) * 5 # x = 5
+y = np.linspace(0, 10, num_values).reshape(-1, 1) # y variável
+t = np.ones((num_values, 1)) * (2 * np.pi) # t = 2 * pi
 
 input_data = np.hstack((x, y, t))
 
-#Inicializa o plot 
-fig, ax1 = plt.subplots(figsize=(16, 8))
-ax1.set_xlabel('y')
-ax1.set_ylabel('u(x = 5, y, t = 2π)')
-
-# Array para armazenar os hpos usados, predição obtida e o erro.
+# Array para armazenar dados ao longo das iterações
 results = np.zeros((n_calls, 7), dtype=object)
 
 # Função para buscar os hiperparâmetros
 @use_named_args(dimensions=dimensions)
 def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
+    
     config = [learning_rate, num_dense_layers, num_dense_nodes, activation]
     global ITERATION
 
@@ -166,20 +162,21 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     with open(file_name, 'w') as file:
         file.write(new_content)
     
-    """ Parte do Gráfico Comparativo """
-    results[ITERATION, :-3] = config # Salva os parâmetros
-
+    
+    results[ITERATION, 0] = ITERATION #salva o ID para facilitar depois buscar a loss
+    results[ITERATION, 1:5] = config # Salva os parâmetros
+    
+    """ Parte da Predição usando u(x = 5, y, 2*pi) """
     predicted_solution = np.empty((num_values, 1))
     for i in range(num_values):
         predicted_solution[i] = model.predict(input_data[i].reshape(1, -1))
     
-    results[ITERATION, -3] = ITERATION #salva o ID para facilitar depois buscar a loss
-    results[ITERATION, -2] = predicted_solution # Salva as predições
-    results[ITERATION, -1] = error # Salva o erro obtido
+    results[ITERATION, 5] = predicted_solution # Salva as predições
+    results[ITERATION, 6] = error # Salva a loss obtida
 
     if np.isnan(error):
         error = 10**5 # Caso tenha algum problema
-
+        
     ITERATION += 1
     return error
 
@@ -195,23 +192,19 @@ search_result = gp_minimize(
     random_state=seed,
 )
 
-# Ordena todos os resultados usando o ERRO obtido
-sorted_results = results[results[:, -1].argsort()]
+""" Salvar isso em um CSV """
 
-# Seleciona os 10 melhores.
-top_10_results = sorted_results[:10]
+cols = ['ID', 'Taxa de Aprendizado', 'Número de Camadas Ocultas', 'Número de Neurônios por Camada', 'Ativação', 'Solução Predita', 'Loss']
 
-#Construção do gráfico
-for i, result in enumerate(top_10_results):
-    label = f"{result[-3]} - LR: {result[0]}, Layers: {result[1]}, Nodes: {result[2]}, Activ.: {result[3]}"
-    ax1.plot(y, result[-2].reshape(y.shape), linewidth=2, label=label)
+file_name = 'results.csv'
 
-ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-ax1.set_title('10 Melhores Configurações')
-fig.savefig('comparison_plot.png', bbox_inches='tight')
-plt.close(fig)
+# Salvando os dados no arquivo CSV
+with open(file_name, mode='w', newline='') as arquivo_csv:
+    escritor_csv = csv.writer(arquivo_csv)
+    escritor_csv.writerow(cols)  # Header
+    escritor_csv.writerows(results)  # Dados
 
-# Print dos melhores obtidos depois de otimizar na função gp_minimize
+# Print do melhor obtido depois de otimizar na função gp_minimize
 print(search_result.x)
 
 # Gráfico de convergência

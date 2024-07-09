@@ -1,2 +1,2 @@
 Treino com batch_size de 32 e 10000 épocas, além da seed ser 9298745.
-Melhor configuração de parâmetros obtida: [0.005, 8, 40, 'Swish']
+Melhor configuração de parâmetros obtida: [0.005, 8, 70, 'Swish']
