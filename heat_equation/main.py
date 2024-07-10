@@ -1,9 +1,7 @@
 import deepxde as dde
 import random
 import numpy as np
-from network import PINN
 import matplotlib.pyplot as plt
-from animation import animate_solution
 from skopt.space import Real, Categorical, Integer
 from skopt.utils import use_named_args
 import skopt
@@ -11,6 +9,10 @@ from skopt import gp_minimize
 from skopt.plots import plot_convergence, plot_objective
 import os
 import csv
+
+import sys
+sys.path.append('../network')
+from network import PINN
 
 np.int = int
 
@@ -23,10 +25,10 @@ else:
     sin = tf.sin
 
 # Constante de difusividade
-k = 10 ** -8
+alpha = 0.01
 
 # Número de épocas
-epochs = 10000 
+epochs = 2000 
 
 # Semente para usar na busca dos parâmetros
 seed = 9298745
@@ -50,33 +52,31 @@ def neural_network():
     
     # Função representado a PDE
     def pde(X, U):
-        dU_x = dde.grad.jacobian(U, X, j=0)
-        dU_y = dde.grad.jacobian(U, X, j=1)
         dU_t = dde.grad.jacobian(U, X, j=2)
 
         dU_xx = dde.grad.hessian(U, X, i=0, j=0)
         dU_yy = dde.grad.hessian(U, X, i=1, j=1)
 
-        return dU_t + (5 - X[:, 1:2]) * dU_x + (X[:, 0:1] - 5) * dU_y - k * (dU_xx + dU_yy)
+        return dU_t - alpha * ( dU_xx + dU_yy)
     
     # Função representando os valores de condição inicial da PDE
-    def func_initial_condition(x):
-        r = np.power(x[:, 0:1] - 5, 2) + np.power(x[:, 1:2] - 7.5, 2)
-        return np.exp(-0.5 * r)
+    def func_initial_condition(X):
+        t = np.zeros((len(X), 1))
+        return t
     
     # Monta o SOLVER usando como inicialização Glorot e Adam de otimizador
     pinn = PINN('Glorot uniform', 'adam')
     
     """Geometria:
-        0 <= x <= 10, 
-        0 <= y <= 10, 
-        0 <= t <= 2 * pi
+        0 <= x <= 1, 
+        0 <= y <= 1, 
+        0 <= t <= 1
     """
-    pinn.define_geometry(10, 10, 0, 2 * np.pi)
+    pinn.define_geometry(1, 1, 0, 1)
     pinn.define_pde(pde)
     
-    # Todas as bordas inicializando com 0
-    pinn.define_boundaries(0, 0, 0, 0)
+    # Todas as bordas inicializando com 0, exceto a superior. 
+    pinn.define_boundaries(1, 0, 0, 0)
     pinn.define_initial_condition(func_initial_condition)
     
     # 3000 amostras para treinamento
@@ -89,7 +89,7 @@ pinn = neural_network()
 """ Otimização dos Hiperparâmetros (HPO) """
 
 # Número de chamadas para o HPO
-n_calls = 40
+n_calls = 11
 
 # Taxas de Aprendizado usadas
 dim_learning_rate = Categorical(categories=[1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2], name="learning_rate")
@@ -116,9 +116,9 @@ default_parameters = [1e-3, 5, 60, "tanh"]
 """ Parte para salvar a predição que será usada em um gráfico de recorte comparativo """
 num_values = 128 # Malha idêntica ao do solver de elementos finitos
     
-x = np.ones((num_values, 1)) * 5 # x = 5
+x = np.ones((num_values, 1)) * 0.5 # x = 0.5
 y = np.linspace(0, 10, num_values).reshape(-1, 1) # y variável
-t = np.ones((num_values, 1)) * (2 * np.pi) # t = 2 * pi
+t = np.ones((num_values, 1)) # t = 1
 
 input_data = np.hstack((x, y, t))
 
@@ -209,12 +209,12 @@ print(search_result.x)
 
 # Gráfico de convergência
 fig_convergence = plot_convergence(search_result)
-plt.savefig('convergence_plot.png')
+plt.savefig('plots/convergence_plot.png')
 plt.close(fig_convergence.figure)
 
 # Gráfico de comparação 2 a 2 dos hp's
-fig_objective = plot_objective(search_result, show_points=True, size=3.8)
-plt.savefig('objective_plot.png')
+fig_objective = plot_objective(search_result, show_points=True, size=3.8, cmap = 'rocket_r')
+plt.savefig('plots/objective_plot.png')
 plt.close(fig_objective.figure)
 
 # Arquivo final contendo informações mais gerais.
