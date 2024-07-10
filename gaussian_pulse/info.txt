@@ -1,2 +1,17 @@
 Treino com batch_size de 32 e 10000 épocas, além da seed ser 9298745.
 Melhor configuração de parâmetros obtida: [0.005, 8, 70, 'Swish']
+
+## Gráfico do loss weights
+
+Best model at step 20000:
+  train loss: 5.38e-05
+  test loss: 5.38e-05
+  test metric: []
+
+Soma das LOSS ao longo das 20k de épocas
+PDE: 3.22e-02
+Boundary Left: 2.89e-02
+Boundary Right: 8.56e-03
+Boundary Low: 8.25e-03
+Boundary Up: 2.65e-02
+Initial: 7.19e-02
