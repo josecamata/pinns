@@ -215,7 +215,7 @@ plt.savefig('plots/convergence_plot.png')
 plt.close(fig_convergence.figure)
 
 # Gráfico de comparação 2 a 2 dos hp's
-fig_objective = plot_objective(search_result, show_points=True, size=3.8, cmap = 'rocket_r')
+fig_objective = plot_objective(search_result, show_points=True, size=3.8, cmap = 'RdYlBu_r')
 plt.savefig('plots/objective_plot.png')
 plt.close(fig_objective.figure)
 

@@ -28,7 +28,7 @@ else:
 alpha = 0.01
 
 # Número de épocas
-epochs = 2000 
+epochs = 10000 
 
 # Semente para usar na busca dos parâmetros
 seed = 9298745
@@ -89,7 +89,7 @@ pinn = neural_network()
 """ Otimização dos Hiperparâmetros (HPO) """
 
 # Número de chamadas para o HPO
-n_calls = 11
+n_calls = 40
 
 # Taxas de Aprendizado usadas
 dim_learning_rate = Categorical(categories=[1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2], name="learning_rate")
@@ -213,7 +213,7 @@ plt.savefig('plots/convergence_plot.png')
 plt.close(fig_convergence.figure)
 
 # Gráfico de comparação 2 a 2 dos hp's
-fig_objective = plot_objective(search_result, show_points=True, size=3.8, cmap = 'rocket_r')
+fig_objective = plot_objective(search_result, show_points=True, size=3.8, cmap = 'RdYlBu_r')
 plt.savefig('plots/objective_plot.png')
 plt.close(fig_objective.figure)
 
