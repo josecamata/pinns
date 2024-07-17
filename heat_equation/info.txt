@@ -1,12 +1,2 @@
-Best model at step 19000:
-  train loss: 6.90e-03
-  test loss: 6.90e-03
-  test metric: []
-
-Soma das loss ao longo das 20k de épocas:
-PDE: 4.07e-02
-Boundary Left: 4.30e-02
-Boundary Right: 1.48e-01
-Boundary Low: 5.34e-03
-Boundary Up: 1.14e+00
-Initial: 5.48e-02
+Treino com batch_size de 32 e 10000 épocas, além da seed ser 9298745.
+Melhor configuração de parâmetros obtida: [0.005, 5, 40, 'Swish']

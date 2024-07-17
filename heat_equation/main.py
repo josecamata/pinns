@@ -39,12 +39,12 @@ batch_size = 32
 
 # pde, top, right, down, left, ic
 LOSS_WEIGHTS = [
-    100, 
+    50, 
+    50,
+    15,
     0.1,
-    0.1,
-    0.1,
-    0.1,
-    10, 
+    10,
+    25, 
 ]
 
 # Definição da Rede Neural
@@ -101,7 +101,7 @@ dim_num_dense_layers = Integer(low=3, high=8, name="num_dense_layers")
 dim_num_dense_nodes = Categorical(categories=[20, 30, 40, 50, 60, 70, 80], name="num_dense_nodes")
 
 # Funções de Ativação
-dim_activation = Categorical(categories=["ReLU", "sigmoid", "tanh", "Swish", "sin"], name="activation")
+dim_activation = Categorical(categories=["sigmoid", "tanh", "Swish", "sin"], name="activation")
 
 dimensions = [
     dim_learning_rate,
