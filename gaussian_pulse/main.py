@@ -35,7 +35,7 @@ seed = 9298745
 dde.config.set_random_seed(seed)
 
 # Tamanho dos lotes
-batch_size = 32
+batch_size = 16
 
 # pde, top, right, down, left, ic
 LOSS_WEIGHTS = [
@@ -91,19 +91,19 @@ pinn = neural_network()
 """ Otimização dos Hiperparâmetros (HPO) """
 
 # Número de chamadas para o HPO
-n_calls = 40
+n_calls = 50
 
 # Taxas de Aprendizado usadas
-dim_learning_rate = Categorical(categories=[1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2], name="learning_rate")
+dim_learning_rate = Real(low=1e-4, high=5e-2, name="learning_rate", prior="log-uniform")
 
 # Número de Camadas Ocultas
-dim_num_dense_layers = Integer(low=3, high=8, name="num_dense_layers")
+dim_num_dense_layers = Integer(low=1, high=10, name="num_dense_layers")
 
 # Número de Neurônios em cada Camada Oculta
-dim_num_dense_nodes = Categorical(categories=[20, 30, 40, 50, 60, 70, 80], name="num_dense_nodes")
+dim_num_dense_nodes = Integer(low=10, high=120, name="num_dense_nodes")
 
 # Funções de Ativação
-dim_activation = Categorical(categories=["ReLU", "sigmoid", "tanh", "Swish", "sin"], name="activation")
+dim_activation = Categorical(categories=["sigmoid", "tanh", "Swish", "sin"], name="activation")
 
 dimensions = [
     dim_learning_rate,
@@ -125,7 +125,7 @@ t = np.ones((num_values, 1)) * (2 * np.pi) # t = 2 * pi
 input_data = np.hstack((x, y, t))
 
 # Array para armazenar dados ao longo das iterações
-results = np.zeros((n_calls, 7), dtype=object)
+results = np.zeros((n_calls, 9), dtype=object)
 
 # Função para buscar os hiperparâmetros
 @use_named_args(dimensions=dimensions)
@@ -147,7 +147,7 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
     model = pinn.create_model(config, LOSS_WEIGHTS)
     
     # Treino do Modelo
-    error, training_time, best_step = pinn.train_model(model, epochs, batch_size, iteration_step = ITERATION)
+    train, test, error, training_time, best_step = pinn.train_model(model, epochs, batch_size, iteration_step = ITERATION)
 
     """ Parte para salvar no .dat os dados de hiperparâmetros usados naquele treinamento """
     
@@ -174,7 +174,9 @@ def fitness(learning_rate, num_dense_layers, num_dense_nodes, activation):
         predicted_solution[i] = model.predict(input_data[i].reshape(1, -1))
     
     results[ITERATION, 5] = predicted_solution # Salva as predições
-    results[ITERATION, 6] = error # Salva a loss obtida
+    results[ITERATION, 6] = train # Loss de treino
+    results[ITERATION, 7] = test # Loss de teste
+    results[ITERATION, 8] = error # Erro do HPO
 
     if np.isnan(error):
         error = 10**5 # Caso tenha algum problema
@@ -196,7 +198,7 @@ search_result = gp_minimize(
 
 """ Salvar isso em um CSV """
 
-cols = ['ID', 'Taxa de Aprendizado', 'Número de Camadas Ocultas', 'Número de Neurônios por Camada', 'Ativação', 'Solução Predita', 'Loss']
+cols = ['ID', 'Taxa de Aprendizado', 'Número de Camadas Ocultas', 'Número de Neurônios por Camada', 'Ativação', 'Solução Predita', 'Loss Treino', 'Loss Teste', 'Error HPO']
 
 file_name = 'results.csv'
 

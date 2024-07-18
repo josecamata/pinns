@@ -156,6 +156,7 @@ class PINN:
                 num_domain=int(SAMPLE_POINTS),
                 num_boundary=int(SAMPLE_POINTS / 4),
                 num_initial=int(SAMPLE_POINTS / 2),
+                num_test=int(SAMPLE_POINTS/2),
             )
     
     """
@@ -242,9 +243,14 @@ class PINN:
         train = np.array(losshistory.loss_train).sum(axis=1).ravel()
         test = np.array(losshistory.loss_test).sum(axis=1).ravel()
 
+        dde.saveplot(losshistory, train_state, issave=True, isplot=True)
+        plt.savefig(f"outputs/loss_plot/loss_history_{iteration_step}")
+        plt.close()
+
         error = test.min()
         
         # Restaura o melhor modelo
-        model.restore(f"outputs/model/model_{iteration_step}.ckpt-" + str(train_state.best_step) + ".pt", verbose=1)
+        if(train_state.best_step != 0):
+            model.restore(f"outputs/model/model_{iteration_step}.ckpt-" + str(train_state.best_step) + ".pt", verbose=1)
         
-        return error, training_time, train_state.best_step
+        return train, test, error, training_time, train_state.best_step
