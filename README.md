@@ -35,18 +35,14 @@ PINNs/
    ```
    *Caso o arquivo `requirements.txt` não esteja presente, instale bibliotecas como DeepXDE, TensorFlow, PyTorch, Matplotlib e NumPy manualmente.*
 
-3. Execute os notebooks interativos:
-   ```bash
-   jupyter notebook
-   ```
+
 
 ## Como Utilizar
 Para rodar a implementação de uma PINN, utilize um dos notebooks disponíveis nos diretórios correspondentes, por exemplo:
 ```bash
 cd heat_equation
-jupyter notebook heat_equation.ipynb
+python main.py
 ```
-Isso abrirá um ambiente interativo para execução do modelo.
 
 ## Limpeza de Arquivos
 Se necessário, utilize o script `cleanup.sh` para remover arquivos temporários:
