@@ -3,10 +3,12 @@
 ## Sobre o Projeto
 O **PINNs** (“Physics-Informed Neural Networks”) é um repositório focado no estudo e implementação de Redes Neurais Informadas pela Física. Essas redes são projetadas para resolver equações diferenciais parciais (PDEs) incorporando informações físicas diretamente na função de perda, permitindo aprender soluções precisas com menos dados.
 
+Este projeto utiliza a biblioteca **DeepXDE**, uma ferramenta poderosa para resolver equações diferenciais usando redes neurais profundas.
+
 ## Recursos
 - Implementação de PINNs para resolver PDEs.
 - Casos de estudo como equação do calor e pulsos gaussianos.
-- Utiliza **TensorFlow** e **PyTorch** para treinamento de redes neurais.
+- Utiliza **DeepXDE**, **TensorFlow** e **PyTorch** para treinamento de redes neurais.
 - Suporte para visualização e animação dos resultados.
 
 ## Estrutura do Repositório
@@ -31,7 +33,7 @@ PINNs/
    ```bash
    pip install -r requirements.txt
    ```
-   *Caso o arquivo `requirements.txt` não esteja presente, instale bibliotecas como TensorFlow, PyTorch, Matplotlib e NumPy manualmente.*
+   *Caso o arquivo `requirements.txt` não esteja presente, instale bibliotecas como DeepXDE, TensorFlow, PyTorch, Matplotlib e NumPy manualmente.*
 
 3. Execute os notebooks interativos:
    ```bash
@@ -69,6 +71,7 @@ Contribuições são bem-vindas! Para contribuir:
    git push origin minha-feature
    ```
 5. Abra um Pull Request detalhando suas alterações.
+
 
 ## Agradecimento
 Este projeto recebeu financiamento da FAPEMIG (APQ-01123-21).
